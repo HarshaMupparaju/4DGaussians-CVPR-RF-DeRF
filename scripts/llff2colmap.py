@@ -93,6 +93,19 @@ poses = poses_arr[:, :-2].reshape([-1, 3, 5])  # (N_cams, 3, 5)
 near_fars = poses_arr[:, -2:]
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
+#Select indices 4,9,14 from videos
+# print(videos)
+# indices = [False for i in range(len(videos))]
+# indices[4] = True
+# indices[9] = True
+# indices[14] = True
+# videos = [videos[i] for i in indices]
+# poses_arr = poses_arr[indices]
+# print(len(videos))
+# print(poses_arr.shape)
+# videos = videos[0:2]
+# poses_arr = poses_arr[0:2]
+# poses = poses[0:2]
 assert len(videos) == poses_arr.shape[0]
 H, W, focal = poses[0, :, -1]
 focal = focal/2
@@ -111,6 +124,7 @@ poses = np.concatenate([poses[..., 1:2], -poses[..., :1], poses[..., 2:4]], -1)
 # val_poses = directions
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
+# videos = videos[0:2]
 image_paths = []
 for index, video_path in enumerate(videos):
     image_path = os.path.join(video_path,"images","0000.png")

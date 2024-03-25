@@ -250,7 +250,7 @@ class Neural3D_NDC_Dataset(Dataset):
         self.white_bg = False
         self.ndc_ray = True
         self.depth_data = False
-
+        self.train_nums = [5, 10, 15]
         self.load_meta()
         print(f"meta data loaded, total image:{len(self)}")
 
@@ -262,8 +262,25 @@ class Neural3D_NDC_Dataset(Dataset):
         poses_arr = np.load(os.path.join(self.root_dir, "poses_bounds.npy"))
         poses = poses_arr[:, :-2].reshape([-1, 3, 5])  # (N_cams, 3, 5)
         self.near_fars = poses_arr[:, -2:]
+        if(self.split == "train"):
+            poses_all = poses
+            self.near_fars_all = self.near_fars
         videos = glob.glob(os.path.join(self.root_dir, "cam*.mp4"))
         videos = sorted(videos)
+        if(self.split == "train"):
+            train_indexes = []
+            for video in videos:
+                if(int(video.split('/')[-1].split('.')[0][-2:]) in self.train_nums):
+                    train_indexes.append(videos.index(video))
+
+            train_indexes.append(self.eval_index)
+            sorted(train_indexes)
+            self.train_nums = train_indexes
+            videos = [videos[i] for i in train_indexes]
+            poses_arr = poses_arr[train_indexes]
+            poses = poses[train_indexes]
+            self.near_fars = self.near_fars[train_indexes]
+
         # breakpoint()
         assert len(videos) == poses_arr.shape[0]
 
@@ -271,6 +288,8 @@ class Neural3D_NDC_Dataset(Dataset):
         focal = focal / self.downsample
         self.focal = [focal, focal]
         poses = np.concatenate([poses[..., 1:2], -poses[..., :1], poses[..., 2:4]], -1)
+        if(self.split == "train"):
+            poses_all = np.concatenate([poses_all[..., 1:2], -poses_all[..., :1], poses_all[..., 2:4]], -1)
         # poses, _ = center_poses(
         #     poses, self.blender2opencv
         # )  # Re-center poses so that the average is near the center.
@@ -284,7 +303,10 @@ class Neural3D_NDC_Dataset(Dataset):
 
         # Sample N_views poses for validation - NeRF-like camera trajectory.
         N_views = 300
-        self.val_poses = get_spiral(poses, self.near_fars, N_views=N_views)
+        if(self.split == "train"):
+            self.val_poses = get_spiral(poses_all, self.near_fars_all, N_views=N_views)
+        else:
+            self.val_poses = get_spiral(poses, self.near_fars, N_views=N_views)
         # self.val_poses = self.directions
         W, H = self.img_wh
         poses_i_train = []
@@ -293,7 +315,10 @@ class Neural3D_NDC_Dataset(Dataset):
             if i != self.eval_index:
                 poses_i_train.append(i)
         self.poses = poses[poses_i_train]
-        self.poses_all = poses
+        if(self.split == "train"):
+            self.poses_all = poses_all
+        else:
+            self.poses_all = poses
         self.image_paths, self.image_poses, self.image_times, N_cam, N_time = self.load_images_path(videos, self.split)
         self.cam_number = N_cam
         self.time_number = N_time
