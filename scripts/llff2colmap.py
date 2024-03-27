@@ -93,19 +93,21 @@ poses = poses_arr[:, :-2].reshape([-1, 3, 5])  # (N_cams, 3, 5)
 near_fars = poses_arr[:, -2:]
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
-#Select indices 4,9,14 from videos
-# print(videos)
-# indices = [False for i in range(len(videos))]
-# indices[4] = True
-# indices[9] = True
-# indices[14] = True
-# videos = [videos[i] for i in indices]
-# poses_arr = poses_arr[indices]
-# print(len(videos))
-# print(poses_arr.shape)
-# videos = videos[0:2]
-# poses_arr = poses_arr[0:2]
-# poses = poses[0:2]
+
+train_nums = [5, 10, 15]
+# train_nums = [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+train_indexes = []
+for video in videos:
+    if(int(video.split('/')[-1].split('.')[0][-2:]) in train_nums):
+        train_indexes.append(videos.index(video))
+
+train_indexes.append(0)
+train_indexes = sorted(train_indexes)
+videos = [videos[i] for i in train_indexes]
+poses_arr = poses_arr[train_indexes]
+near_fars = near_fars[train_indexes]
+poses = poses[train_indexes]
+
 assert len(videos) == poses_arr.shape[0]
 H, W, focal = poses[0, :, -1]
 focal = focal/2
@@ -124,7 +126,7 @@ poses = np.concatenate([poses[..., 1:2], -poses[..., :1], poses[..., 2:4]], -1)
 # val_poses = directions
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
-# videos = videos[0:2]
+videos = [videos[i] for i in train_indexes]
 image_paths = []
 for index, video_path in enumerate(videos):
     image_path = os.path.join(video_path,"images","0000.png")

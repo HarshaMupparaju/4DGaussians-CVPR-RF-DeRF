@@ -251,6 +251,7 @@ class Neural3D_NDC_Dataset(Dataset):
         self.ndc_ray = True
         self.depth_data = False
         self.train_nums = [5, 10, 15]
+        # self.train_nums = [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         self.load_meta()
         print(f"meta data loaded, total image:{len(self)}")
 
@@ -274,7 +275,7 @@ class Neural3D_NDC_Dataset(Dataset):
                     train_indexes.append(videos.index(video))
 
             train_indexes.append(self.eval_index)
-            sorted(train_indexes)
+            train_indexes = sorted(train_indexes)
             self.train_nums = train_indexes
             videos = [videos[i] for i in train_indexes]
             poses_arr = poses_arr[train_indexes]
