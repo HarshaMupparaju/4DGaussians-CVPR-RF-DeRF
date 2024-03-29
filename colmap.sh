@@ -2,10 +2,13 @@
 
 workdir=$1
 datatype=$2 # blender, hypernerf, llff
+train_nums=$3
+test_nums=$4
+
 export CUDA_VISIBLE_DEVICES=0
 rm -rf $workdir/sparse_
 rm -rf $workdir/image_colmap
-python scripts/"$datatype"2colmap.py $workdir
+python scripts/"$datatype"2colmap.py $workdir $train_nums $test_nums
 rm -rf $workdir/colmap
 rm -rf $workdir/colmap/sparse/0
 

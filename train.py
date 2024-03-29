@@ -299,6 +299,8 @@ def training(dataset, hyper, opt, pipe, testing_iterations, saving_iterations, c
     tb_writer = prepare_output_and_logger(expname)
     gaussians = GaussianModel(dataset.sh_degree, hyper)
     dataset.model_path = args.model_path
+    dataset.train_views = args.train_views
+    dataset.test_views = args.test_views
     timer = Timer()
     scene = Scene(dataset, gaussians, load_coarse=None)
     timer.start()
@@ -410,6 +412,8 @@ if __name__ == "__main__":
     parser.add_argument("--start_checkpoint", type=str, default = None)
     parser.add_argument("--expname", type=str, default = "")
     parser.add_argument("--configs", type=str, default = "")
+    parser.add_argument("--train_views", type=str, default = "")
+    parser.add_argument("--test_views", type=str, default = "")
     
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)

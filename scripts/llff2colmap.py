@@ -85,6 +85,8 @@ def center_poses(poses, blender2opencv):
 
     return poses_centered, pose_avg_homo
 root_dir = sys.argv[1]
+train_nums_string = sys.argv[2]
+test_nums_string = sys.argv[3]
 colmap_dir = os.path.join(root_dir,"sparse_")
 if not os.path.exists(colmap_dir):
     os.makedirs(colmap_dir)
@@ -94,19 +96,26 @@ near_fars = poses_arr[:, -2:]
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
 
-train_nums = [5, 10, 15]
-# train_nums = [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-train_indexes = []
+train_nums = train_nums_string.split(',')
+train_nums = [int(num) for num in train_nums]
+
+test_nums = test_nums_string.split(',')
+test_nums = [int(num) for num in test_nums]
+
+train_test_indices = []
 for video in videos:
     if(int(video.split('/')[-1].split('.')[0][-2:]) in train_nums):
-        train_indexes.append(videos.index(video))
+        train_test_indices.append(videos.index(video))
 
-train_indexes.append(0)
-train_indexes = sorted(train_indexes)
-videos = [videos[i] for i in train_indexes]
-poses_arr = poses_arr[train_indexes]
-near_fars = near_fars[train_indexes]
-poses = poses[train_indexes]
+for video in videos:
+    if(int(video.split('/')[-1].split('.')[0][-2:]) in test_nums):
+        train_test_indices.append(videos.index(video))
+
+train_test_indices = sorted(train_test_indices)
+videos = [videos[i] for i in train_test_indices]
+poses_arr = poses_arr[train_test_indices]
+near_fars = near_fars[train_test_indices]
+poses = poses[train_test_indices]
 
 assert len(videos) == poses_arr.shape[0]
 H, W, focal = poses[0, :, -1]
@@ -126,7 +135,7 @@ poses = np.concatenate([poses[..., 1:2], -poses[..., :1], poses[..., 2:4]], -1)
 # val_poses = directions
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
-videos = [videos[i] for i in train_indexes]
+videos = [videos[i] for i in train_test_indices]
 image_paths = []
 for index, video_path in enumerate(videos):
     image_path = os.path.join(video_path,"images","0000.png")
