@@ -13,13 +13,13 @@ import os
 import random
 import json
 from utils.system_utils import searchForMaxIteration
-from scene.dataset_readers import sceneLoadTypeCallbacks
-from scene.gaussian_model import GaussianModel
-from scene.dataset import FourDGSdataset
+from scene1.dataset_readers import sceneLoadTypeCallbacks
+from scene1.gaussian_model import GaussianModel
+from scene1.dataset import FourDGSdataset
 from arguments import ModelParams
 from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
 from torch.utils.data import Dataset
-from scene.dataset_readers import add_points
+from scene1.dataset_readers import add_points
 class Scene:
 
     gaussians : GaussianModel
@@ -29,8 +29,6 @@ class Scene:
         :param path: Path to colmap scene main folder.
         """
         self.model_path = args.model_path
-        # self.train_views = args.train_views 
-        # self.test_views = args.test_views
         self.loaded_iter = None
         self.gaussians = gaussians
         
@@ -52,10 +50,7 @@ class Scene:
             scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval, args.extension)
             dataset_type="blender"
         elif os.path.exists(os.path.join(args.source_path, "poses_bounds.npy")):
-            scene_info = sceneLoadTypeCallbacks["dynerf"](args.source_path, args.white_background, args.eval, args.train_views, args.test_views, "dynerf")
-            dataset_type="dynerf"
-        elif os.path.exists(os.path.join(args.source_path, "poses_bounds.npy")):
-            scene_info = sceneLoadTypeCallbacks["interdigital"](args.source_path, args.white_background, args.eval, args.train_views, args.test_views, "interdigital")
+            scene_info = sceneLoadTypeCallbacks["dynerf"](args.source_path, args.white_background, args.eval)
             dataset_type="dynerf"
         elif os.path.exists(os.path.join(args.source_path,"dataset.json")):
             scene_info = sceneLoadTypeCallbacks["nerfies"](args.source_path, False, args.eval)

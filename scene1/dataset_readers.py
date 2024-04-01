@@ -15,9 +15,9 @@ from PIL import Image
 from scene.cameras import Camera
 
 from typing import NamedTuple
-from scene.colmap_loader import read_extrinsics_text, read_intrinsics_text, qvec2rotmat, \
+from scene1.colmap_loader import read_extrinsics_text, read_intrinsics_text, qvec2rotmat, \
     read_extrinsics_binary, read_intrinsics_binary, read_points3D_binary, read_points3D_text
-from scene.hyper_loader import Load_hyper_data, format_hyper_data
+from scene1.hyper_loader import Load_hyper_data, format_hyper_data
 import torchvision.transforms as transforms
 import copy
 from utils.graphics_utils import getWorld2View2, focal2fov, fov2focal
@@ -27,7 +27,7 @@ import json
 from pathlib import Path
 from plyfile import PlyData, PlyElement
 from utils.sh_utils import SH2RGB
-from scene.gaussian_model import BasicPointCloud
+from scene1.gaussian_model import BasicPointCloud
 from utils.general_utils import PILtoTorch
 from tqdm import tqdm
 class CameraInfo(NamedTuple):
@@ -439,16 +439,13 @@ def add_points(pointsclouds, xyz_min, xyz_max):
     return pointsclouds
     # breakpoint()
     # new_
-def readdynerfInfo(datadir,use_bg_points,eval, train_views, test_views, dataset_name):
+def readdynerfInfo(datadir,use_bg_points,eval):
     # loading all the data follow hexplane format
     # ply_path = os.path.join(datadir, "points3D_dense.ply")
     ply_path = os.path.join(datadir, "points3D_downsample2.ply")
-    from scene.neural_3D_dataset_NDC import Neural3D_NDC_Dataset
+    from scene1.neural_3D_dataset_NDC_original import Neural3D_NDC_Dataset
     train_dataset = Neural3D_NDC_Dataset(
     datadir,
-    train_views,
-    test_views,
-    dataset_name,
     "train",
     1.0,
     time_scale=1,
@@ -458,9 +455,6 @@ def readdynerfInfo(datadir,use_bg_points,eval, train_views, test_views, dataset_
         )    
     test_dataset = Neural3D_NDC_Dataset(
     datadir,
-    train_views,
-    test_views,
-    dataset_name,
     "test",
     1.0,
     time_scale=1,
@@ -605,56 +599,11 @@ def readPanopticSportsinfos(datadir):
                            maxtime=max_time,
                            )
     return scene_info
-def readinterdigitalInfo(datadir, train_views, test_views):
-    ply_path = os.path.join(datadir, "points3D_downsample2.ply")
-    from scene.neural_3D_dataset_NDC import Neural3D_NDC_Dataset
-    train_dataset = Neural3D_NDC_Dataset(
-    datadir,
-    train_views,
-    test_views,
-    "train",
-    1.0,
-    time_scale=1,
-    scene_bbox_min=[-2.5, -2.0, -1.0],
-    scene_bbox_max=[2.5, 2.0, 1.0],
-    eval_index=0,
-        )    
-    test_dataset = Neural3D_NDC_Dataset(
-    datadir,
-    train_views,
-    test_views,
-    "test",
-    1.0,
-    time_scale=1,
-    scene_bbox_min=[-2.5, -2.0, -1.0],
-    scene_bbox_max=[2.5, 2.0, 1.0],
-    eval_index=0,
-        )
-    train_cam_infos = format_infos(train_dataset,"train")
-    val_cam_infos = format_render_poses(test_dataset.val_poses,test_dataset)
-    nerf_normalization = getNerfppNorm(train_cam_infos)
-
-    # xyz = np.load
-    pcd = fetchPly(ply_path)
-    print("origin points,",pcd.points.shape[0])
-    
-    print("after points,",pcd.points.shape[0])
-
-    scene_info = SceneInfo(point_cloud=pcd,
-                           train_cameras=train_dataset,
-                           test_cameras=test_dataset,
-                           video_cameras=val_cam_infos,
-                           nerf_normalization=nerf_normalization,
-                           ply_path=ply_path,
-                           maxtime=300
-                           )
-    return scene_info
-    
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
     "Blender" : readNerfSyntheticInfo,
     "dynerf" : readdynerfInfo,
     "nerfies": readHyperDataInfos,  # NeRFies & HyperNeRF dataset proposed by [https://github.com/google/hypernerf/releases/tag/v0.1]
-    "PanopticSports" : readPanopticSportsinfos,
-    "interdigital": readdynerfInfo
+    "PanopticSports" : readPanopticSportsinfos
+
 }

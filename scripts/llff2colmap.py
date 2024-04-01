@@ -87,12 +87,16 @@ def center_poses(poses, blender2opencv):
 root_dir = sys.argv[1]
 train_nums_string = sys.argv[2]
 test_nums_string = sys.argv[3]
+dataset_name = sys.argv[4]
 colmap_dir = os.path.join(root_dir,"sparse_")
 if not os.path.exists(colmap_dir):
     os.makedirs(colmap_dir)
+# if(dataset_name == "dynerf"):
 poses_arr = np.load(os.path.join(root_dir, "poses_bounds.npy"))
 poses = poses_arr[:, :-2].reshape([-1, 3, 5])  # (N_cams, 3, 5)
 near_fars = poses_arr[:, -2:]
+# elif(dataset_name == "interdigital"):
+
 videos = glob.glob(os.path.join(root_dir, "cam[0-9][0-9]"))
 videos = sorted(videos)
 
@@ -112,6 +116,7 @@ for video in videos:
         train_test_indices.append(videos.index(video))
 
 train_test_indices = sorted(train_test_indices)
+# train_test_indices = [0,1,2,3,5,6,7,8]
 videos = [videos[i] for i in train_test_indices]
 poses_arr = poses_arr[train_test_indices]
 near_fars = near_fars[train_test_indices]
@@ -180,7 +185,10 @@ for idx, pose in enumerate(poses):
 
 # write camera infomation.
 object_cameras_file = open(os.path.join(colmap_dir,"cameras.txt"),"w")
-print(1,"SIMPLE_PINHOLE",1352,1014,focal[0],1352/2,1014/2,file=object_cameras_file)
+if(dataset_name == "dynerf"):
+    print(1,"SIMPLE_PINHOLE",1352,1014,focal[0],1352/2,1014/2,file=object_cameras_file)
+elif(dataset_name == "interdigital"):
+    print(1,"SIMPLE_PINHOLE",1024,544,focal[0],1024/2,544/2,file=object_cameras_file)
 object_point_file = open(os.path.join(colmap_dir,"points3D.txt"),"w")
 
 object_cameras_file.close()

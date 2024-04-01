@@ -3,10 +3,10 @@ from pathlib  import Path
 import pandas as pd
 
 set_num = 4
-scenes = ['coffee_martini' 'cook_spinach' 'cut_roasted_beef', 'flame_salmon_1', 'flame_steak', 'sear_steak']
-# scenes = ['cook_spinach']
+scenes = ['Birthday' 'Painter' 'Remy' 'Theater' 'Train']
+# scenes = ['Birthday']
 # Read the training and testing set 
-data_dirpath = Path('data/dynerf')
+data_dirpath = Path('data/InterDigital')
 train_test_sets_dirpath = data_dirpath / 'train_test_sets'
 
 required_train_test_set_dirpath = train_test_sets_dirpath / f'set{set_num:02d}'
@@ -29,14 +29,14 @@ for scene in scenes:
     # os.system(f'bash colmap.sh {data_dirpath}/{scene} llff {train_video_nums_string} {test_video_nums_string}')
 
     #Point Cloud Downsample
-    os.system(f'python scripts/downsample_point.py data/dynerf/{scene}/colmap/dense/workspace/fused.ply data/dynerf/{scene}/points3D_downsample2.ply')
+    os.system(f'python scripts/downsample_point.py data/InterDigital/{scene}/colmap/dense/workspace/fused.ply data/InterDigital/{scene}/points3D_downsample2.ply')
     # output_path = f''
     #Training
-    os.system(f'python train.py -s data/dynerf/{scene} --port 6017 --expname "dynerf/set{set_num}/{scene}" --configs arguments/dynerf/{scene}.py --train_views {train_video_nums_string} --test_views {test_video_nums_string}')
+    os.system(f'python train.py -s data/InterDigital/{scene} --port 6017 --expname "InterDigital/set{set_num}/{scene}" --configs arguments/InterDigital/{scene}.py --train_views {train_video_nums_string} --test_views {test_video_nums_string}')
 
     #Rendering
-    os.system(f'python render.py --model_path "output/dynerf/set{set_num}/{scene}"  --skip_train --configs arguments/dynerf/{scene}.py --train_views {train_video_nums_string} --test_views {test_video_nums_string}')
+    os.system(f'python render.py --model_path "output/InterDigital/set{set_num}/{scene}"  --skip_train --configs arguments/InterDigital/{scene}.py --train_views {train_video_nums_string} --test_views {test_video_nums_string}')
 
     #Evaluation
-    os.system(f'python metrics.py --model_path "output/dynerf/set{set_num}/{scene}/"')
+    os.system(f'python metrics.py --model_path "output/InterDigital/set{set_num}/{scene}/"')
 

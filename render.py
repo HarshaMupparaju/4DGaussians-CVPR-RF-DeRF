@@ -87,6 +87,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 def render_sets(dataset : ModelParams, hyperparam, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool, skip_video: bool):
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree, hyperparam)
+        dataset.train_views = args.train_views
+        dataset.test_views = args.test_views
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         cam_type=scene.dataset_type
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
@@ -111,6 +113,8 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--skip_video", action="store_true")
     parser.add_argument("--configs", type=str)
+    parser.add_argument("--train_views", type=str, default = "")
+    parser.add_argument("--test_views", type=str, default = "")
     args = get_combined_args(parser)
     print("Rendering " , args.model_path)
     if args.configs:

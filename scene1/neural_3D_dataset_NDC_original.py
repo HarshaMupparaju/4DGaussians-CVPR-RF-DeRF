@@ -127,26 +127,26 @@ def process_video(video_data_save, video_path, img_wh, downsample, transform):
                 video_frame = Image.fromarray(video_frame)
                 if downsample != 1.0:
                     img = video_frame.resize(img_wh, Image.LANCZOS)
-                img.save(os.path.join(image_path,"%04d.png"%count))
+                img.save(os.path.join(image_path, "%04d.png" % count))
 
                 img = transform(img)
-                video_data_save[count] = img.permute(1,2,0)
+                video_data_save[count] = img.permute(1, 2, 0)
                 count += 1
             else:
                 break
-      
+
     else:
         images_path = os.listdir(image_path)
         images_path.sort()
-        
+
         for path in images_path:
-            img = Image.open(os.path.join(image_path,path))
-            if downsample != 1.0:  
+            img = Image.open(os.path.join(image_path, path))
+            if downsample != 1.0:
                 img = img.resize(img_wh, Image.LANCZOS)
                 img = transform(img)
-                video_data_save[count] = img.permute(1,2,0)
+                video_data_save[count] = img.permute(1, 2, 0)
                 count += 1
-        
+
     video_frames.release()
     print(f"Video {video_path} processed.")
     return None
@@ -158,7 +158,7 @@ def process_videos(videos, skip_index, img_wh, downsample, transform, num_worker
     A multi-threaded function to load all videos fastly and memory-efficiently.
     To save memory, we pre-allocate a tensor to store all the images and spawn multi-threads to load the images into this tensor.
     """
-    all_imgs = torch.zeros(len(videos) - 1, 300, img_wh[-1] , img_wh[-2], 3)
+    all_imgs = torch.zeros(len(videos) - 1, 300, img_wh[-1], img_wh[-2], 3)
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
         # start a thread for each video
         current_index = 0
@@ -179,6 +179,7 @@ def process_videos(videos, skip_index, img_wh, downsample, transform, num_worker
                 futures.append(future)
                 current_index += 1
     return all_imgs
+
 
 def get_spiral(c2ws_all, near_fars, rads_scale=1.0, N_views=120):
     """
@@ -207,24 +208,22 @@ def get_spiral(c2ws_all, near_fars, rads_scale=1.0, N_views=120):
 
 class Neural3D_NDC_Dataset(Dataset):
     def __init__(
-        self,
-        datadir,
-        train_views,
-        test_views,
-        dataset_name,
-        split="train",
-        downsample=1.0,
-        is_stack=True,
-        cal_fine_bbox=False,
-        N_vis=-1,
-        time_scale=1.0,
-        scene_bbox_min=[-1.0, -1.0, -1.0],
-        scene_bbox_max=[1.0, 1.0, 1.0],
-        N_random_pose=1000,
-        bd_factor=0.75,
-        eval_step=1,
-        eval_index=0,
-        sphere_scale=1.0,
+            self,
+            datadir,
+            dataset_name,
+            split="train",
+            downsample=1.0,
+            is_stack=True,
+            cal_fine_bbox=False,
+            N_vis=-1,
+            time_scale=1.0,
+            scene_bbox_min=[-1.0, -1.0, -1.0],
+            scene_bbox_max=[1.0, 1.0, 1.0],
+            N_random_pose=1000,
+            bd_factor=0.75,
+            eval_step=1,
+            eval_index=0,
+            sphere_scale=1.0,
     ):
         if(dataset_name == "dynerf"):
             self.img_wh = (
@@ -260,15 +259,6 @@ class Neural3D_NDC_Dataset(Dataset):
         self.white_bg = False
         self.ndc_ray = True
         self.depth_data = False
-        
-        self.train_nums = train_views.split(',')
-        self.train_nums = [int(i) for i in self.train_nums]
-        
-        self.test_nums = test_views.split(',')
-        self.test_nums = [int(i) for i in self.test_nums]
-        # self.eval_index = self.test_nums[0]
-        # self.train_nums = [1, 2, 3, 5, 6, 7, 8]
-
         self.dataset_name = dataset_name
 
         self.load_meta()
@@ -291,6 +281,9 @@ class Neural3D_NDC_Dataset(Dataset):
         #     # extrinsics = extrinsics[:, :3, :]
         #     intrinsics = intrinsics.reshape([-1, 3, 3])
         #     w2c = extrinsics
+        #     w2c = np.stack(w2c,0)
+        #     print(w2c.shape)
+        #     print(1/0)
         #     c2w = np.linalg.inv(w2c)
         #     poses = c2w[:, :3, :4].transpose([1,2,0])
         #     h = self.img_wh[1]
@@ -301,37 +294,20 @@ class Neural3D_NDC_Dataset(Dataset):
 
         #     # must switch to [-u, r, -t] from [r, -u, t], NOT [r, u, -t]
         #     poses = np.concatenate([poses[:, 1:2, :], poses[:, 0:1, :], -poses[:, 2:3, :], poses[:, 3:4, :], poses[:, 4:5, :]], 1)
+        #     print(poses.shape)
+        #     print(1/0)
         #     poses_arr = poses
         #     self.near_fars = bounds
-        if(self.split == "train"):
-            poses_all = poses
-            self.near_fars_all = self.near_fars
         videos = glob.glob(os.path.join(self.root_dir, "*.mp4"))
         videos = sorted(videos)
-        if(self.split == "train"):
-            train_test_indices = []
-            for video in videos:
-                if(int(video.split('/')[-1].split('.')[0][-2:]) in self.train_nums):
-                    train_test_indices.append(videos.index(video))
-                    
-            train_test_indices.append(self.eval_index)
-            train_test_indices = sorted(train_test_indices)
-            videos = [videos[i] for i in train_test_indices]
-            poses_arr = poses_arr[train_test_indices]
-            poses = poses[train_test_indices]
-            self.near_fars = self.near_fars[train_test_indices]
-
         # breakpoint()
+
         assert len(videos) == poses_arr.shape[0]
-        # if(self.dataset_name == "dynerf"):
+
         H, W, focal = poses[0, :, -1]
-        # elif(self.dataset_name == "interdigital"):
-        #     H, W, focal = h, w, f
         focal = focal / self.downsample
         self.focal = [focal, focal]
         poses = np.concatenate([poses[..., 1:2], -poses[..., :1], poses[..., 2:4]], -1)
-        if(self.split == "train"):
-            poses_all = np.concatenate([poses_all[..., 1:2], -poses_all[..., :1], poses_all[..., 2:4]], -1)
         # poses, _ = center_poses(
         #     poses, self.blender2opencv
         # )  # Re-center poses so that the average is near the center.
@@ -345,10 +321,7 @@ class Neural3D_NDC_Dataset(Dataset):
 
         # Sample N_views poses for validation - NeRF-like camera trajectory.
         N_views = 300
-        if(self.split == "train"):
-            self.val_poses = get_spiral(poses_all, self.near_fars_all, N_views=N_views)
-        else:
-            self.val_poses = get_spiral(poses, self.near_fars, N_views=N_views)
+        self.val_poses = get_spiral(poses, self.near_fars, N_views=N_views)
         # self.val_poses = self.directions
         W, H = self.img_wh
         poses_i_train = []
@@ -357,18 +330,17 @@ class Neural3D_NDC_Dataset(Dataset):
             if i != self.eval_index:
                 poses_i_train.append(i)
         self.poses = poses[poses_i_train]
-        if(self.split == "train"):
-            self.poses_all = poses_all
-        else:
-            self.poses_all = poses
+        self.poses_all = poses
         self.image_paths, self.image_poses, self.image_times, N_cam, N_time = self.load_images_path(videos, self.split)
         self.cam_number = N_cam
         self.time_number = N_time
+
     def get_val_pose(self):
         render_poses = self.val_poses
         render_times = torch.linspace(0.0, 1.0, render_poses.shape[0]) * 2.0 - 1.0
         return render_poses, self.time_scale * render_times
-    def load_images_path(self,videos,split):
+
+    def load_images_path(self, videos, split):
         image_paths = []
         image_poses = []
         image_times = []
@@ -376,17 +348,17 @@ class Neural3D_NDC_Dataset(Dataset):
         N_time = 0
         countss = 300
         for index, video_path in enumerate(videos):
-            
+
             if index == self.eval_index:
-                if split =="train":
+                if split == "train":
                     continue
             else:
                 if split == "test":
                     continue
-            N_cams +=1
+            N_cams += 1
             count = 0
             video_images_path = video_path.split('.')[0]
-            image_path = os.path.join(video_images_path,"images")
+            image_path = os.path.join(video_images_path, "images")
             video_frames = cv2.VideoCapture(video_path)
             if not os.path.exists(image_path):
                 print(f"no images saved in {image_path}, extract images from video.")
@@ -394,51 +366,52 @@ class Neural3D_NDC_Dataset(Dataset):
                 this_count = 0
                 while video_frames.isOpened():
                     ret, video_frame = video_frames.read()
-                    if this_count >= countss:break
+                    if this_count >= countss: break
                     if ret:
                         video_frame = cv2.cvtColor(video_frame, cv2.COLOR_BGR2RGB)
                         video_frame = Image.fromarray(video_frame)
                         if self.downsample != 1.0:
-
                             img = video_frame.resize(self.img_wh, Image.LANCZOS)
-                        img.save(os.path.join(image_path,"%04d.png"%count))
+                        img.save(os.path.join(image_path, "%04d.png" % count))
 
                         # img = transform(img)
                         count += 1
-                        this_count+=1
+                        this_count += 1
                     else:
                         break
-                    
+
             images_path = os.listdir(image_path)
             images_path.sort()
             this_count = 0
             for idx, path in enumerate(images_path):
-                if this_count >=countss:break
-                image_paths.append(os.path.join(image_path,path))
+                if this_count >= countss: break
+                image_paths.append(os.path.join(image_path, path))
                 pose = np.array(self.poses_all[index])
-                R = pose[:3,:3]
+                R = pose[:3, :3]
                 R = -R
-                R[:,0] = -R[:,0]
-                T = -pose[:3,3].dot(R)
-                image_times.append(idx/countss)
-                image_poses.append((R,T))
+                R[:, 0] = -R[:, 0]
+                T = -pose[:3, 3].dot(R)
+                image_times.append(idx / countss)
+                image_poses.append((R, T))
                 # if self.downsample != 1.0:
                 #     img = video_frame.resize(self.img_wh, Image.LANCZOS)
                 # img.save(os.path.join(image_path,"%04d.png"%count))
-                this_count+=1
+                this_count += 1
             N_time = len(images_path)
 
-                #     video_data_save[count] = img.permute(1,2,0)
-                #     count += 1
+            #     video_data_save[count] = img.permute(1,2,0)
+            #     count += 1
         return image_paths, image_poses, image_times, N_cams, N_time
+
     def __len__(self):
         return len(self.image_paths)
-    def __getitem__(self,index):
+
+    def __getitem__(self, index):
         img = Image.open(self.image_paths[index])
         img = img.resize(self.img_wh, Image.LANCZOS)
 
         img = self.transform(img)
         return img, self.image_poses[index], self.image_times[index]
-    def load_pose(self,index):
-        return self.image_poses[index]
 
+    def load_pose(self, index):
+        return self.image_poses[index]
